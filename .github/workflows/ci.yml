@@ -6,16 +6,59 @@ on:
   pull_request:
     branches: [master]
 
+# 发布 PyPI 时不要因新提交取消正在跑的 run
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
+  actions: write
 
 jobs:
+  version_check:
+    if: github.event.repository.fork == false
+    runs-on: ubuntu-latest
+    outputs:
+      version_changed: ${{ steps.compare.outputs.changed }}
+      version_new: ${{ steps.compare.outputs.new }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compare pyproject version with previous / PR base
+        id: compare
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+          else
+            HEAD=$(git rev-parse HEAD)
+            if ! git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+              echo "new=" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            BASE=$(git rev-parse HEAD~1)
+          fi
+
+          old_v=$(git show "$BASE:pyproject.toml" | python3 -c "import sys,tomllib; print(tomllib.loads(sys.stdin.read())['project']['version'])")
+          new_v=$(git show "$HEAD:pyproject.toml" | python3 -c "import sys,tomllib; print(tomllib.loads(sys.stdin.read())['project']['version'])")
+
+          echo "base=$BASE head=$HEAD old=$old_v new=$new_v"
+          echo "new=$new_v" >> "$GITHUB_OUTPUT"
+          if [ "$old_v" != "$new_v" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
   verify:
-    # 不在 fork 仓库里跑（避免别人 fork 后每次 push 都占用 Actions/跑构建）
+    needs: version_check
     if: github.event.repository.fork == false
     runs-on: ubuntu-latest
 
@@ -40,3 +83,36 @@ jobs:
 
       - name: Build
         run: uv build
+
+      - name: Upload distributions
+        if: needs.version_check.outputs.version_changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish-pypi:
+    needs: [version_check, verify]
+    if: >
+      github.event.repository.fork == false
+      && github.event_name == 'push'
+      && needs.version_check.outputs.version_changed == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/toolcall-gateway/
+    permissions:
+      id-token: write
+      actions: read
+
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
