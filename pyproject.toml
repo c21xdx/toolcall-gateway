@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "toolcall-gateway"
-version = "0.1.0"
+version = "1.0.0"
 description = "Convert OpenAI-style tools and tool history into tagged text prompts, and tagged text back into OpenAI-style tool-call semantics."
 readme = "README.md"
 requires-python = ">=3.12"
