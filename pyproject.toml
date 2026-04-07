@@ -37,5 +37,6 @@ include = [
     ".github/workflows",
     "Makefile",
     "README.md",
+    "README.en.md",
     "pyproject.toml",
 ]
