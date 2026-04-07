@@ -143,3 +143,7 @@ uv run --with ruff ruff check .
 uv run python -m unittest discover -s tests
 uv build
 ```
+
+## 社区支持
+
+学 AI，上 L 站 — 欢迎到 **[LinuxDO](https://linux.do)** 交流讨论。
