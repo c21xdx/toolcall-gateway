@@ -9,7 +9,7 @@
 
 **toolcall-gateway** is a small, typed Python library that sits between **OpenAI-style tool calling** (function definitions, `tool_calls` on assistant turns, tool results in the chat) and **plain-text model I/O**.
 
-It gives you a strict, reproducible **tagged text protocol** (`<redacted_thinking>`, `<tool_calls>` / `<tool_call>`, `<final_answer>`) so you can:
+It gives you a strict, reproducible **tagged text protocol** (`<think>`, `<tool_calls>` / `<tool_call>`, `<final_answer>`) so you can:
 
 1. **tool2text** — Turn tools + message history into one prompt string for **text-only** or **non-native-tool** models.
 2. **text2tool** — Parse the model’s tagged reply back into **OpenAI-style** assistant semantics (e.g. `finish_reason`, `tool_calls`).
@@ -74,7 +74,7 @@ prompt = build_prompt(
 
 # Send `prompt` to your text-only model...
 model_output = (
-    "<redacted_thinking>I need the file first</redacted_thinking>"
+    "<think>I need the file first</think>"
     '<tool_calls>[{"name":"Read","arguments":{"path":"a.py"}}]</tool_calls>'
 )
 
@@ -94,14 +94,14 @@ print(turn.tool_calls[0].function.name)  # Read
 The model is instructed to use only these tags (parallel variant shown):
 
 ```xml
-<redacted_thinking>...</redacted_thinking>
+<think>...</think>
 <tool_calls>[{"name":"Read","arguments":{"path":"a.py"}}]</tool_calls>
 ```
 
 or a final reply:
 
 ```xml
-<redacted_thinking>...</redacted_thinking>
+<think>...</think>
 <final_answer>...</final_answer>
 ```
 

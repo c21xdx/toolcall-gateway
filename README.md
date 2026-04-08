@@ -9,7 +9,7 @@
 
 **toolcall-gateway** 是一个体量小、带类型标注的 Python 库，作用是在 **OpenAI 风格的工具调用**（函数定义、助手消息里的 `tool_calls`、工具角色返回的结果等）与 **纯文本模型输入输出** 之间做转换。
 
-它约定了一套严格的 **标签文本协议**（`<redacted_thinking>`、`<tool_calls>` / `<tool_call>`、`<final_answer>`），让你可以：
+它约定了一套严格的 **标签文本协议**（`<think>`、`<tool_calls>` / `<tool_call>`、`<final_answer>`），让你可以：
 
 1. **tool2text** — 把工具定义和多轮对话打成 **一段** 适合 **只接受文本** 或 **不支持原生 tool_calls** 的模型的 prompt。
 2. **text2tool** — 把模型按协议吐出的标签文本 **解析回** OpenAI 风格的助手轮次语义（例如 `finish_reason`、`tool_calls`）。
@@ -74,7 +74,7 @@ prompt = build_prompt(
 
 # 将 prompt 发给你的纯文本模型...
 model_output = (
-    "<redacted_thinking>I need the file first</redacted_thinking>"
+    "<think>I need the file first</think>"
     '<tool_calls>[{"name":"Read","arguments":{"path":"a.py"}}]</tool_calls>'
 )
 
@@ -94,14 +94,14 @@ print(turn.tool_calls[0].function.name)  # Read
 并行多工具时使用 `<tool_calls>`，内容为 JSON 数组，例如：
 
 ```xml
-<redacted_thinking>...</redacted_thinking>
+<think>...</think>
 <tool_calls>[{"name":"Read","arguments":{"path":"a.py"}}]</tool_calls>
 ```
 
 若只需最终自然语言回答：
 
 ```xml
-<redacted_thinking>...</redacted_thinking>
+<think>...</think>
 <final_answer>...</final_answer>
 ```
 
